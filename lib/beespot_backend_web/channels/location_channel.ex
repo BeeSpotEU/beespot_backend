@@ -35,12 +35,18 @@ defmodule BeespotBackendWeb.LocationChannel do
       %BeespotBackend.BeespotBackendWeb.Location{},
       location
     )
-    |> BeespotBackend.Repo.insert()
+    |> BeespotBackend.Repo.insert_or_update()
+    |> handle_insert_result(socket)
     |> broadcast_new_location(socket)
   end
 
-  defp broadcast_new_location({:ok, location}, socket) do
-    IO.inspect(location)
+  defp handle_insert_result({:ok, location}, socket) do
+    push(socket, "created_location", %{body: location})
+    location
+  end
+
+  defp broadcast_new_location(location, socket) do
     broadcast!(socket, "new_location", %{body: location})
+    location
   end
 end
