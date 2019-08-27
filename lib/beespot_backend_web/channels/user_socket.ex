@@ -2,7 +2,7 @@ defmodule BeespotBackendWeb.UserSocket do
   use Phoenix.Socket
 
   ## Channels
-  channel "room:*", BeespotBackendWeb.RoomChannel
+  channel "locations:*", BeespotBackendWeb.LocationChannel
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After
