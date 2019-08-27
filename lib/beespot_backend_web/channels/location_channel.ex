@@ -2,6 +2,7 @@ defmodule BeespotBackendWeb.LocationChannel do
   use Phoenix.Channel
 
   def join("locations:lobby", _message, socket) do
+    send(self(), :after_join)
     {:ok, socket}
   end
 
@@ -12,6 +13,21 @@ defmodule BeespotBackendWeb.LocationChannel do
   def handle_in("add_location", %{"body" => body}, socket) do
     spawn(fn -> save_location(body, socket) end)
     {:noreply, socket}
+  end
+
+  def handle_info(:after_join, socket) do
+    previous_locations()
+    |> Enum.each(fn location ->
+      push(socket, "new_location", %{
+        body: location
+      })
+    end)
+
+    {:noreply, socket}
+  end
+
+  def previous_locations() do
+    BeespotBackend.Repo.all(BeespotBackend.BeespotBackendWeb.Location)
   end
 
   defp save_location(location, socket) do
