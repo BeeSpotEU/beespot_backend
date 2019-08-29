@@ -31,22 +31,46 @@ defmodule BeespotBackendWeb.LocationChannel do
   end
 
   defp save_location(location, socket) do
-    BeespotBackend.BeespotBackendWeb.Location.changeset(
-      %BeespotBackend.BeespotBackendWeb.Location{},
-      location
-    )
-    |> BeespotBackend.Repo.insert_or_update()
-    |> handle_insert_result(socket)
-    |> broadcast_new_location(socket)
+    if location["id"] do
+      IO.inspect(location)
+
+      case BeespotBackend.Repo.get(BeespotBackend.BeespotBackendWeb.Location, location["id"]) do
+        # Post not found, we build one
+        nil -> %BeespotBackend.BeespotBackendWeb.Location{id: location["id"]}
+        # Post exists, let's use it
+        found -> found
+      end
+      |> BeespotBackend.BeespotBackendWeb.Location.changeset(location)
+      |> BeespotBackend.Repo.insert_or_update()
+      |> handle_insert_result(socket)
+      |> broadcast_new_location(socket)
+    else
+      BeespotBackend.BeespotBackendWeb.Location.changeset(
+        %BeespotBackend.BeespotBackendWeb.Location{},
+        location
+      )
+      |> BeespotBackend.Repo.insert()
+      |> handle_insert_result(socket)
+      |> broadcast_new_location(socket)
+    end
   end
 
   defp handle_insert_result({:ok, location}, socket) do
     push(socket, "created_location", %{body: location})
+    {:ok, location}
+  end
+
+  defp handle_insert_result({:error, changeset}, socket) do
+    push(socket, "error_create_location", %{body: changeset})
+    {:error, changeset}
+  end
+
+  defp broadcast_new_location({:ok, location}, socket) do
+    broadcast!(socket, "new_location", %{body: location})
     location
   end
 
-  defp broadcast_new_location(location, socket) do
-    broadcast!(socket, "new_location", %{body: location})
-    location
+  defp broadcast_new_location({:error, changeset}, _socket) do
+    {:error, changeset}
   end
 end
