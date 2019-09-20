@@ -10,9 +10,9 @@ use Mix.Config
 # which you should run after static files are built and
 # before starting your production server.
 config :beespot_backend, BeespotBackendWeb.Endpoint,
-  url: [scheme: "https", host: "young-reef-68987", port: 443],
-  force_ssl: [rewrite_on: [:x_forwarded_proto]],
-  cache_static_manifest: "priv/static/cache_manifest.json"
+  http: [:inet6, port: System.get_env("PORT") || 4000],
+  url: [host: "localhost", port: 80],
+  server: true
 
 # Do not print debug messages in production
 config :logger, level: :info
@@ -53,4 +53,4 @@ config :logger, level: :info
 
 # Finally import the config/prod.secret.exs which loads secrets
 # and configuration from environment variables.
-import_config "prod.secret.exs"
+# import_config "prod.secret.exs"

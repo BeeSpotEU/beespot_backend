@@ -10,6 +10,12 @@ defmodule BeespotBackendWeb.LocationChannel do
     {:error, %{reason: "unauthorized"}}
   end
 
+  def handle_in("create_session", %{}, socket) do
+    uuid = String.slice(Ecto.UUID.generate(), -4..-1)
+    push(socket, "created_session", %{body: uuid})
+    {:noreply, socket}
+  end
+
   def handle_in("add_location", %{"body" => body}, socket) do
     spawn(fn -> save_location(body, socket) end)
     {:noreply, socket}

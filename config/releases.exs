@@ -2,17 +2,19 @@
 # from environment variables. You can also hardcode secrets,
 # although such is generally not recommended and you have to
 # remember to add this file to your .gitignore.
-use Mix.Config
+import Config
 
 database_url =
-  System.get_env("DATABASE_URL") ||
-    raise """
-    environment variable DATABASE_URL is missing.
-    For example: ecto://USER:PASS@HOST/DATABASE
-    """
+  "ecto://" <>
+    System.get_env("PG_USER") <>
+    ":" <>
+    System.get_env("PG_PASS") <>
+    "@" <>
+    System.get_env("PG_HOST") <>
+    ":" <> System.get_env("PG_PORT") <> "/" <> System.get_env("PG_DB")
 
 config :beespot_backend, BeespotBackend.Repo,
-  ssl: true,
+  # ssl: true,
   url: database_url,
   pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
 
