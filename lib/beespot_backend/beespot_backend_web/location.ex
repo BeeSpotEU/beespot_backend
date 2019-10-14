@@ -9,6 +9,7 @@ defmodule BeespotBackend.BeespotBackendWeb.Location do
     field :latitude, :string
     field :longitude, :string
     field :name, :string
+    belongs_to :session, BeespotBackend.BeespotBackendWeb.Session
 
     timestamps()
   end
