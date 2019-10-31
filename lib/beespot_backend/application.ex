@@ -11,9 +11,10 @@ defmodule BeespotBackend.Application do
       # Start the Ecto repository
       BeespotBackend.Repo,
       # Start the endpoint when the application starts
-      BeespotBackendWeb.Endpoint
+      BeespotBackendWeb.Endpoint,
       # Starts a worker by calling: BeespotBackend.Worker.start_link(arg)
       # {BeespotBackend.Worker, arg},
+      BeespotBackend.Presence
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

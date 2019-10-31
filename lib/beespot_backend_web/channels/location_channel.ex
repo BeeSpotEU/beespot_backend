@@ -2,17 +2,27 @@ import Ecto.Query
 
 defmodule BeespotBackendWeb.LocationChannel do
   use Phoenix.Channel
+  alias BeespotBackend.Presence
 
   def join("locations:lobby", _message, socket) do
     {:ok, socket}
   end
 
   def join("locations:" <> session_id, _params, socket) do
+    # TODO: Does session id exist? if not -> return error
+
     send(self(), :after_join)
     {:ok, socket}
   end
 
   def handle_info(:after_join, socket) do
+    push(socket, "presence_state", Presence.list(socket))
+
+    {:ok, _} =
+      Presence.track(socket, socket.assigns.user_id, %{
+        online_at: inspect(System.system_time(:second))
+      })
+
     case String.split(socket.topic, ":") do
       ["locations", session_id] ->
         IO.inspect(String.split(socket.topic, ":"))
