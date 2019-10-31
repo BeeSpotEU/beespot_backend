@@ -2,7 +2,7 @@ defmodule BeespotBackend.BeespotBackendWeb.Location do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @derive {Jason.Encoder, except: [:__meta__]}
+  @derive {Jason.Encoder, except: [:__meta__, :session]}
   schema "locations" do
     field :description, :string
     field :hives, :integer

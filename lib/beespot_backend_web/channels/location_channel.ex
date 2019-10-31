@@ -1,18 +1,49 @@
+import Ecto.Query
+
 defmodule BeespotBackendWeb.LocationChannel do
   use Phoenix.Channel
 
   def join("locations:lobby", _message, socket) do
+    {:ok, socket}
+  end
+
+  def join("locations:" <> session_id, _params, socket) do
     send(self(), :after_join)
     {:ok, socket}
   end
 
-  def join("locations:" <> _private_room_id, _params, _socket) do
-    {:error, %{reason: "unauthorized"}}
+  def handle_info(:after_join, socket) do
+    case String.split(socket.topic, ":") do
+      ["locations", session_id] ->
+        IO.inspect(String.split(socket.topic, ":"))
+
+        previous_locations(session_id)
+        |> Enum.each(fn location ->
+          push(socket, "new_location", %{
+            body: location
+          })
+        end)
+    end
+
+    {:noreply, socket}
+  end
+
+  def previous_locations(session_id) do
+    session =
+      BeespotBackend.Repo.get_by(BeespotBackend.BeespotBackendWeb.Session, session_id: session_id)
+
+    query = from l in BeespotBackend.BeespotBackendWeb.Location, where: [session_id: ^session.id]
+
+    BeespotBackend.Repo.all(query)
   end
 
   def handle_in("create_session", %{}, socket) do
     uuid = String.slice(Ecto.UUID.generate(), -4..-1)
-    push(socket, "created_session", %{body: uuid})
+
+    %BeespotBackend.BeespotBackendWeb.Session{session_id: uuid}
+    |> BeespotBackend.Repo.insert()
+    |> handle_insert_result_session(socket)
+
     {:noreply, socket}
   end
 
@@ -21,44 +52,50 @@ defmodule BeespotBackendWeb.LocationChannel do
     {:noreply, socket}
   end
 
-  def handle_info(:after_join, socket) do
-    previous_locations()
-    |> Enum.each(fn location ->
-      push(socket, "new_location", %{
-        body: location
-      })
-    end)
-
-    {:noreply, socket}
+  def handle_insert_result_session({:ok, session}, socket) do
+    push(socket, "created_session", %{body: session.session_id})
+    {:ok, session}
   end
 
-  def previous_locations() do
-    BeespotBackend.Repo.all(BeespotBackend.BeespotBackendWeb.Location)
+  def handle_insert_result_session({:error, changeset}, socket) do
+    push(socket, "error_create_session", %{body: changeset})
+    {:error, changeset}
   end
 
   defp save_location(location, socket) do
+    ["locations", session_id] = String.split(socket.topic, ":")
+
+    session =
+      BeespotBackend.Repo.get_by!(BeespotBackend.BeespotBackendWeb.Session, session_id: session_id)
+
     if location["id"] do
       case BeespotBackend.Repo.get(BeespotBackend.BeespotBackendWeb.Location, location["id"]) do
         # Post not found, we build one
-        nil -> %BeespotBackend.BeespotBackendWeb.Location{id: location["id"]}
+        nil ->
+          %BeespotBackend.BeespotBackendWeb.Location{
+            id: location["id"],
+            session_id: session.id
+          }
+
         # Post exists, let's use it
-        found -> found
+        found ->
+          found
       end
     else
-      %BeespotBackend.BeespotBackendWeb.Location{}
+      %BeespotBackend.BeespotBackendWeb.Location{session_id: session.id}
     end
     |> BeespotBackend.BeespotBackendWeb.Location.changeset(location)
     |> BeespotBackend.Repo.insert_or_update()
-    |> handle_insert_result(socket)
+    |> handle_insert_result_location(socket)
     |> broadcast_new_location(socket)
   end
 
-  defp handle_insert_result({:ok, location}, socket) do
+  defp handle_insert_result_location({:ok, location}, socket) do
     push(socket, "created_location", %{body: location})
     {:ok, location}
   end
 
-  defp handle_insert_result({:error, changeset}, socket) do
+  defp handle_insert_result_location({:error, changeset}, socket) do
     push(socket, "error_create_location", %{body: changeset})
     {:error, changeset}
   end
