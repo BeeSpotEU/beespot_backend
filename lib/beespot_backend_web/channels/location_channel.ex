@@ -5,6 +5,8 @@ defmodule BeespotBackendWeb.LocationChannel do
   alias BeespotBackend.Presence
 
   def join("locations:lobby", _message, socket) do
+    send(self(), :after_join)
+
     {:ok, socket}
   end
 
@@ -25,14 +27,14 @@ defmodule BeespotBackendWeb.LocationChannel do
 
     case String.split(socket.topic, ":") do
       ["locations", session_id] ->
-        IO.inspect(String.split(socket.topic, ":"))
-
-        previous_locations(session_id)
-        |> Enum.each(fn location ->
-          push(socket, "new_location", %{
-            body: location
-          })
-        end)
+        if(session_id != "lobby") do
+          previous_locations(session_id)
+          |> Enum.each(fn location ->
+            push(socket, "new_location", %{
+              body: location
+            })
+          end)
+        end
     end
 
     {:noreply, socket}

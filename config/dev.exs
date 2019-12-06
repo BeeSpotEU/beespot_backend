@@ -16,6 +16,7 @@ config :beespot_backend, BeespotBackend.Repo,
 # watchers to your application. For example, we use it
 # with webpack to recompile .js and .css sources.
 config :beespot_backend, BeespotBackendWeb.Endpoint,
+  reloadable_compilers: [:gettext, :phoenix, :elixir],
   http: [port: 4000],
   debug_errors: true,
   code_reloader: true,
